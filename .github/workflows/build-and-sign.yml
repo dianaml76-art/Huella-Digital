@@ -20,11 +20,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Gradle
+      - name: Install Gradle 9.3.1
         run: |
-          wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
-          unzip -q gradle-8.5-bin.zip
-          echo "$(pwd)/gradle-8.5/bin" >> $GITHUB_PATH
+          wget https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+          unzip -q gradle-9.3.1-bin.zip
+          echo "$(pwd)/gradle-9.3.1/bin" >> $GITHUB_PATH
 
       - name: Decode Keystore
         run: |
