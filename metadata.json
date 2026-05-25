@@ -1,0 +1,6 @@
+{
+  "name": "HuellaSegura",
+  "description": "Una aplicación educativa sobre ciberseguridad, huella digital y protección de datos para familias y menores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
