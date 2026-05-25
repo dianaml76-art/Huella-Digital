@@ -26,6 +26,9 @@ jobs:
           unzip -q gradle-9.3.1-bin.zip
           echo "$(pwd)/gradle-9.3.1/bin" >> $GITHUB_PATH
 
+      - name: Set headless mode to avoid AWT errors
+        run: echo "JAVA_OPTS=-Djava.awt.headless=true" >> $GITHUB_ENV
+
       - name: Decode Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/keystore.jks
@@ -38,7 +41,7 @@ jobs:
           echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Build signed release APK
-        run: gradle assembleRelease
+        run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
