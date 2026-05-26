@@ -43,7 +43,7 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
     private val _showHuellaSummary = MutableStateFlow(false)
     val showHuellaSummary: StateFlow<Boolean> = _showHuellaSummary.asStateFlow()
 
-    // 10 Services and what they track
+    // 14 Services and what they track
     val listaServicios = listOf(
         ServicioDigital("Instagram", "tu ubicación, fotos privadas, contactos, gustos y hábitos de navegación.", "Evita publicar fotos con uniformes escolares o rutinas fijas y pon tu cuenta en modo 'Privado'."),
         ServicioDigital("TikTok", "vídeos grabados por ti, historial de búsqueda, contactos y tiempo que pasas en la app.", "Limita el tiempo de uso diario y desactiva la descarga de tus videos por parte de desconocidos."),
@@ -54,7 +54,11 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
         ServicioDigital("Snapchat", "fotos efímeras guardadas en servidores, mapa de localización en directo y contactos.", "Activa el 'Modo Fantasma' para que nadie en el mapa del servicio pueda ver dónde estás parado físicamente."),
         ServicioDigital("Spotify", "música que disfrutas, listas creadas, tu Facebook sincronizado y actividad al momento.", "Desactiva la opción de hacer públicas tus listas de reproducción por defecto en la configuración principal."),
         ServicioDigital("Amazon", "artículos comprados, dirección de tu domicilio, métodos de pago y tus hábitos de búsqueda.", "Borra las búsquedas de tu historial y nunca guardes datos de tarjetas bancarias para compras automáticas de un clic."),
-        ServicioDigital("Google", "búsquedas de voz, ubicaciones por donde caminas, historial web, fotos y correos electrónicos.", "Visita la página de 'Mi Actividad' de Google periódicamente para borrar el historial de ubicaciones grabadas.")
+        ServicioDigital("Google", "búsquedas de voz, ubicaciones por donde caminas, historial web, fotos y correos electrónicos.", "Visita la página de 'Mi Actividad' de Google periódicamente para borrar el historial de ubicaciones grabadas."),
+        ServicioDigital("Roblox", "historial de compras de Robux, conversaciones en el chat con amigos o desconocidos, juegos preferidos, tiempo jugado y contraseña.", "Nunca hables con desconocidos en privado ni reveles tu contraseña o datos de usuario a cambio de Robux gratis."),
+        ServicioDigital("Telegram", "tu número de teléfono, contactos del móvil, fotos intercambiadas y los grupos públicos o canales de descarga a los que perteneces.", "Oculta tus datos en los ajustes de privacidad del mensajero y desconfía de los grupos públicos de desconocidos."),
+        ServicioDigital("Servicio de Correo", "mensajes recibidos, contraseñas enlazadas a otras cuentas, tu nombre completo real y posibles facturas.", "Activa la verificación en dos pasos (2FA) en tu servidor de correo y limpia la bandeja de spam constantemente."),
+        ServicioDigital("Plataformas de Streaming", "películas y series que ves, perfiles creados para toda tu familia y los detalles del método de pago de la cuenta.", "Configura claves PIN para perfiles adultos y no compartas contraseñas de acceso con personas que no viven contigo.")
     )
 
     // Data class for local structure
@@ -70,8 +74,8 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
             _exposedServices.value = _exposedServices.value + serviceName
             _exposedDataList.value = _exposedDataList.value + "${servicio.nombre}: ${servicio.datosExpuestos}"
         }
-        // Auto show summary when all 10 services are clicked
-        if (_exposedServices.value.size >= 10) {
+        // Auto show summary when all services are clicked
+        if (_exposedServices.value.size >= listaServicios.size) {
             _showHuellaSummary.value = true
         }
     }
@@ -90,6 +94,9 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
     // 3. STREAMS FOR GAME 2: CONCEPT MATCHING
     private val _matchingQuestions = MutableStateFlow<List<ConceptoPregunta>>(emptyList())
     val matchingQuestions: StateFlow<List<ConceptoPregunta>> = _matchingQuestions.asStateFlow()
+
+    private val _currentMatchingPhase = MutableStateFlow(1)
+    val currentMatchingPhase: StateFlow<Int> = _currentMatchingPhase.asStateFlow()
 
     // Shuffle and provide concepts for column A, definitions for column B (shuffled differently)
     private val _shuffledConcepts = MutableStateFlow<List<ConceptoPregunta>>(emptyList())
@@ -126,8 +133,8 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val random10 = ContentDataProvider.bancoPreguntas.shuffled().take(10)
             _matchingQuestions.value = random10
-            _shuffledConcepts.value = random10.shuffled()
-            _shuffledDefinitions.value = random10.shuffled()
+            _currentMatchingPhase.value = 1
+            setupMatchingPhase(random10, 1)
             _selectedConcept.value = null
             _selectedDefinition.value = null
             _matchedIds.value = emptySet()
@@ -136,6 +143,17 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
             _matchingScore.value = 0
             currentMatchAttempts = 0
         }
+    }
+
+    private fun setupMatchingPhase(questions: List<ConceptoPregunta>, phase: Int) {
+        if (questions.size < 10) return
+        val phaseQuestions = if (phase == 1) {
+            questions.subList(0, 5)
+        } else {
+            questions.subList(5, 10)
+        }
+        _shuffledConcepts.value = phaseQuestions.shuffled()
+        _shuffledDefinitions.value = phaseQuestions.shuffled()
     }
 
     fun selectConcept(preg: ConceptoPregunta) {
@@ -170,9 +188,22 @@ class HuellaViewModel(val app: Application) : AndroidViewModel(app) {
                     delay(600) // visual animation delay duration
                     _tempCorrectMatchId.value = null
 
-                    // Check game end
-                    if (_matchedIds.value.size >= 10) {
-                        finishMatchingGame()
+                    // Check if current phase is completed
+                    val phaseQuestions = if (_currentMatchingPhase.value == 1) {
+                        _matchingQuestions.value.subList(0, 5)
+                    } else {
+                        _matchingQuestions.value.subList(5, 10)
+                    }
+                    val currentPhaseMatchedCount = phaseQuestions.count { it.id in _matchedIds.value }
+                    if (currentPhaseMatchedCount >= 5) {
+                        if (_currentMatchingPhase.value == 1) {
+                            // Phase 1 completed, go to Phase 2
+                            _currentMatchingPhase.value = 2
+                            setupMatchingPhase(_matchingQuestions.value, 2)
+                        } else {
+                            // Phase 2 completed, finished game
+                            finishMatchingGame()
+                        }
                     }
                 }
             } else {

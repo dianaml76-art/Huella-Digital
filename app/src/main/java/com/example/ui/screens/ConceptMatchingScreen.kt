@@ -177,6 +177,9 @@ fun ConceptMatchingScreen(
                 }
             }
         } else {
+            // Get current phase from ViewModel
+            val currentPhase by viewModel.currentMatchingPhase.collectAsState()
+
             // Columns of matching items
             LazyColumn(
                 modifier = Modifier
@@ -192,14 +195,66 @@ fun ConceptMatchingScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Selecciona un concepto de la izquierda, luego asocialo con su definición de la derecha. ¡Empareja los 10 con cuidado!",
+                        text = "Selecciona un concepto de la izquierda, luego asocialo con su definición de la derecha. El juego se divide en 2 rondas de 5 parejas cada una.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                     
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Ronda: ",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (currentPhase == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "Fase 1 (Conceptos 1-5)",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (currentPhase == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "➔",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (currentPhase == 2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "Fase 2 (Conceptos 6-10)",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (currentPhase == 2) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onBackground,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
                     Text(
-                        text = "Aciertos: $score / 10",
+                        text = "Aciertos Totales: $score / 10",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -209,30 +264,52 @@ fun ConceptMatchingScreen(
 
                 item {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "CONCEPTOS",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "DEFINICIONES",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Show 5 rows of equal height, keeping both columns perfectly symmetrical
+                items(5) { index ->
+                    val concept = shuffledConcepts.getOrNull(index)
+                    val def = shuffledDefinitions.getOrNull(index)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(115.dp), // Fixed matching height
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // COLUMN A: CONCEPTS
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         ) {
-                            Text(
-                                text = "CONCEPTOS",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-                            )
-
-                            shuffledConcepts.forEach { concept ->
+                            if (concept != null) {
                                 val isMatched = concept.id in matchedIds
                                 val isSelected = selectedConcept == concept
                                 val isJustMatched = tempCorrectMatchId == concept.id
 
                                 val cardBgColor = when {
-                                    isJustMatched -> Color(0xFFE8F5E9) // Verde fuerte transitorio
+                                    isJustMatched -> Color(0xFFE8F5E9)
                                     isMatched -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                     isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                                     else -> MaterialTheme.colorScheme.surface
@@ -245,7 +322,7 @@ fun ConceptMatchingScreen(
 
                                 Card(
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .fillMaxSize()
                                         .testTag("match_concept_${concept.id}")
                                         .clickable(enabled = !isMatched) { viewModel.selectConcept(concept) },
                                     colors = CardDefaults.cardColors(containerColor = cardBgColor),
@@ -254,24 +331,27 @@ fun ConceptMatchingScreen(
                                     elevation = CardDefaults.cardElevation(defaultElevation = if (isMatched) 0.dp else 2.dp)
                                 ) {
                                     Box(
-                                        modifier = Modifier.padding(12.dp)
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(10.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Column {
-                                            Text(
-                                                text = concept.concepto,
-                                                style = MaterialTheme.typography.titleLarge,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isMatched) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f) else MaterialTheme.colorScheme.primary
-                                            )
-                                        }
+                                        Text(
+                                            text = concept.concepto,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isMatched) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f) else MaterialTheme.colorScheme.primary,
+                                            textAlign = TextAlign.Center
+                                        )
 
-                                        // Success green check animation overlay
                                         if (isMatched) {
                                             Icon(
                                                 imageVector = Icons.Default.CheckCircle,
                                                 contentDescription = "Correcto",
                                                 tint = MaterialTheme.colorScheme.tertiary,
-                                                modifier = Modifier.align(Alignment.CenterEnd).size(20.dp)
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .size(16.dp)
                                             )
                                         }
                                     }
@@ -280,20 +360,12 @@ fun ConceptMatchingScreen(
                         }
 
                         // COLUMN B: DEFINITIONS
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         ) {
-                            Text(
-                                text = "DEFINICIONES",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-                            )
-
-                            shuffledDefinitions.forEach { def ->
+                            if (def != null) {
                                 val isMatched = def.id in matchedIds
                                 val isSelected = selectedDefinition == def
                                 val isJustMatched = tempCorrectMatchId == def.id
@@ -312,7 +384,7 @@ fun ConceptMatchingScreen(
 
                                 Card(
                                     modifier = Modifier
-                                        .fillMaxWidth()
+                                        .fillMaxSize()
                                         .testTag("match_def_${def.id}")
                                         .clickable(enabled = !isMatched) { viewModel.selectDefinition(def) },
                                     colors = CardDefaults.cardColors(containerColor = cardBgColor),
@@ -321,22 +393,27 @@ fun ConceptMatchingScreen(
                                     elevation = CardDefaults.cardElevation(defaultElevation = if (isMatched) 0.dp else 2.dp)
                                 ) {
                                     Box(
-                                        modifier = Modifier.padding(12.dp)
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(10.dp),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Column {
-                                            Text(
-                                                text = def.definicion,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = if (isMatched) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
+                                        Text(
+                                            text = def.definicion,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            lineHeight = 14.sp,
+                                            color = if (isMatched) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f) else MaterialTheme.colorScheme.onSurface,
+                                            textAlign = TextAlign.Center
+                                        )
 
                                         if (isMatched) {
                                             Icon(
                                                 imageVector = Icons.Default.CheckCircle,
                                                 contentDescription = "Correcto",
                                                 tint = MaterialTheme.colorScheme.tertiary,
-                                                modifier = Modifier.align(Alignment.CenterEnd).size(20.dp)
+                                                modifier = Modifier
+                                                    .align(Alignment.TopEnd)
+                                                    .size(16.dp)
                                             )
                                         }
                                     }

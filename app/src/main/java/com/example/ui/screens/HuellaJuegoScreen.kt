@@ -51,7 +51,11 @@ fun HuellaJuegoScreen(
         "Snapchat" to Pair(Color(0xFFFFFC00), Icons.Default.Face),
         "Spotify" to Pair(Color(0xFF1DB954), Icons.Default.Audiotrack),
         "Amazon" to Pair(Color(0xFFFF9900), Icons.Default.ShoppingCart),
-        "Google" to Pair(Color(0xFF4285F4), Icons.Default.Search)
+        "Google" to Pair(Color(0xFF4285F4), Icons.Default.Search),
+        "Roblox" to Pair(Color(0xFFE02B2B), Icons.Default.Gamepad),
+        "Telegram" to Pair(Color(0xFF0088CC), Icons.Default.Send),
+        "Servicio de Correo" to Pair(Color(0xFF6A1B9A), Icons.Default.Email),
+        "Plataformas de Streaming" to Pair(Color(0xFFE53935), Icons.Default.Tv)
     )
 
     Column(
@@ -254,21 +258,24 @@ fun HuellaJuegoScreen(
                 }
             }
 
-            // Exposing Progress indicators (e.g. "Cuentas tocadas: X / 10")
+            // Exposing Progress indicators & gravity thermometer
+            val totalServicios = viewModel.listaServicios.size
             item {
+                RiskThermometer(exposedCount = exposedServices.size, totalCount = totalServicios)
+                
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Servicios analizados: ${exposedServices.size}/10",
+                        text = "Servicios analizados: ${exposedServices.size}/$totalServicios",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     
-                    if (exposedServices.size in 1..9 && !showSummary) {
+                    if (exposedServices.size in 1..(totalServicios - 1) && !showSummary) {
                         Button(
                             onClick = { viewModel.showFootprintSummary() },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
@@ -280,7 +287,7 @@ fun HuellaJuegoScreen(
                 }
                 
                 LinearProgressIndicator(
-                    progress = { exposedServices.size / 10f },
+                    progress = { exposedServices.size.toFloat() / totalServicios.toFloat() },
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).height(8.dp),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
@@ -435,3 +442,139 @@ fun FlowRow(
         content()
     }
 }
+
+@Composable
+fun RiskThermometer(exposedCount: Int, totalCount: Int) {
+    val progress = if (totalCount > 0) exposedCount.toFloat() / totalCount.toFloat() else 0f
+    
+    // Determine color, rating level, emoji and detailed advice based on number of active services
+    val (color, label, emoji, message) = when {
+        exposedCount == 0 -> Quadruple(
+            Color(0xFF4CAF50), 
+            "SEGURO", 
+            "🛡️", 
+            "Sin rastros expuestos de momento. ¡Excelente, sigue así!"
+        )
+        exposedCount <= 3 -> Quadruple(
+            Color(0xFF81C784), 
+            "RIESGO BAJO", 
+            "🌱", 
+            "Rastro mínimo inicial en internet. Fácil de organizar y mantener a salvo."
+        )
+        exposedCount <= 7 -> Quadruple(
+            Color(0xFFFFD54F), 
+            "RIESGO MODERADO", 
+            "⚠️", 
+            "Tienes una presencia digital habitual. Revisa bien qué fotos compartes."
+        )
+        exposedCount <= 11 -> Quadruple(
+            Color(0xFFFF9800), 
+            "RIESGO ALTO", 
+            "🔥", 
+            "Exposición alta. Muchos datos entrelazados como geolocalización, chats o gustos."
+        )
+        else -> Quadruple(
+            Color(0xFFE53935), 
+            "RIESGO CRÍTICO", 
+            "🚨", 
+            "¡Alerta máxima! Tu huella digital es gigante y dejas demasiada información personal."
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = color.copy(alpha = 0.08f)
+        ),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.4f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = emoji,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Termómetro de Gravedad",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(color)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // The visual bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(18.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(progress)
+                        .clip(RoundedCornerShape(9.dp))
+                        .background(color)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Severity ruler legend marks
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Seguro", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                Text("Leve", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                Text("Medio", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                Text("Grave", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
+                Text("Crítico", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+    }
+}
+
+data class Quadruple<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)
