@@ -1,32 +1,43 @@
-- name: Build Debug APK
-  run: gradle assembleDebug --stacktrace
+name: Build Android APK
+
 on:
-  workflow_dispatch:   # Para ejecutarlo manualmente desde la pestaña Actions
+  workflow_dispatch:      # Permite ejecutarlo manualmente desde la pestaña Actions
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Clonar el repositorio
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # 2. Instalar Java 17 (necesario para Gradle 8+)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle (sin necesidad de gradlew)
+      # 3. Instalar el SDK de Android con la plataforma 35 (compileSdk del proyecto)
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35'
+
+      # 4. Configurar Gradle (usa la versión definida en gradle-wrapper.properties)
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: '8.5'   # Puedes cambiar la versión si tu proyecto requiere otra
+          gradle-version: '8.5.2'
 
+      # 5. Compilar la APK de depuración (debug)
       - name: Build Debug APK
-        run: gradle assembleDebug
+        run: gradle assembleDebug --stacktrace
 
+      # 6. Subir la APK generada como artefacto descargable
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
+          name: HuellaDigital-debug
           path: app/build/outputs/apk/debug/*.apk
