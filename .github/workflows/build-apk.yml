@@ -1,39 +1,32 @@
-# Nombre de tu flujo de trabajo
 name: Build Android APK
 
-# Esto le dice al robot cuándo debe empezar a trabajar.
-# En este caso, cuando alguien haga clic en el botón "Run workflow" desde la pestaña Actions.
 on:
-  workflow_dispatch:
+  workflow_dispatch:   # Para ejecutarlo manualmente desde la pestaña Actions
 
 jobs:
   build:
-    # El robot usará una máquina con Ubuntu (Linux) que ya viene lista para Android.
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Clonar tu código (descargar la receta y los ingredientes)
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # 2. Preparar Java, el lenguaje en el que está escrita la app
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    # 3. Dar permiso para ejecutar el script de Gradle
-    - name: Make Gradlew executable
-      run: chmod +x gradlew
+      - name: Setup Gradle (sin necesidad de gradlew)
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'   # Puedes cambiar la versión si tu proyecto requiere otra
 
-    # 4. Ejecutar la compilación para generar la APK de prueba (debug)
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      - name: Build Debug APK
+        run: gradle assembleDebug
 
-    # 5. Subir la APK generada como un archivo descargable en GitHub
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
