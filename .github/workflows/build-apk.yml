@@ -1,5 +1,5 @@
-name: Build Android APK
-
+- name: Build Debug APK
+  run: gradle assembleDebug --stacktrace
 on:
   workflow_dispatch:   # Para ejecutarlo manualmente desde la pestaña Actions
 
