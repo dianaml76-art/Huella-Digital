@@ -23,13 +23,15 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Clean and Build with full logs
+      - name: Clean and Build
         run: |
           gradle clean
-          gradle assembleDebug --stacktrace --info --no-daemon 2>&1 | tee build.log
+          gradle assembleDebug --stacktrace --info --no-daemon > build.log 2>&1
           if [ $? -ne 0 ]; then
-            echo "=== ERROR DETECTED. Last 100 lines: ==="
-            tail -n 100 build.log
+            echo "========================================"
+            echo "Build failed. Last 200 lines of log:"
+            echo "========================================"
+            tail -n 200 build.log
             exit 1
           fi
 
