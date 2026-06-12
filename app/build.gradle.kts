@@ -4,14 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.huelladigital"   // CAMBIA ESTO AL NAMESPACE REAL DE TU APP
-    compileSdk = 35
-    buildToolsVersion = "35.0.0"
+    namespace = "com.example.huelladigital"   // Cámbialo al namespace real de tu app
+    compileSdk = 34   // Cambiar a 34 (o 35 si tienes SDK 35 instalado)
 
     defaultConfig {
-        applicationId = "com.example.huelladigital"   // CAMBIA AL ID REAL
+        applicationId = "com.example.huelladigital"   // Cámbialo al ID real
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -30,19 +29,24 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
     }
+
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
