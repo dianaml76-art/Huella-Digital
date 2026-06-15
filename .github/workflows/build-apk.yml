@@ -27,9 +27,22 @@ jobs:
         run: gradle clean
 
       - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace --info --no-daemon
+        id: build
+        run: |
+          gradle assembleDebug --stacktrace --info --no-daemon 2>&1 | tee build.log
+          if [ $? -ne 0 ]; then
+            echo "build_failed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload build log if failed
+        if: steps.build.outputs.build_failed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
 
       - name: Upload APK
+        if: steps.build.outputs.build_failed != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: HuellaDigital-debug
